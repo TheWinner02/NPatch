@@ -131,7 +131,11 @@ dependencies {
     implementation(npatch.rikka.shizuku.api)
     implementation(npatch.rikka.shizuku.provider)
     implementation(npatch.rikka.refine)
-    //implementation(npatch.raamcosta.compose.destinations)
+    implementation(npatch.raamcosta.compose.destinations)
+    implementation(npatch.androidx.navigation.compose)
+    implementation(npatch.google.accompanist.navigation.animation)
+    implementation(npatch.google.accompanist.pager)
+    implementation(npatch.google.accompanist.swiperefresh)
     implementation(libs.appiconloader)
     implementation(libs.hiddenapibypass)
 
@@ -148,7 +152,7 @@ dependencies {
     annotationProcessor(npatch.androidx.room.compiler)
     compileOnly(npatch.rikka.hidden.stub)
     ksp(npatch.androidx.room.compiler)
-    //ksp(npatch.raamcosta.compose.destinations.ksp)
+    ksp(npatch.raamcosta.compose.destinations.ksp)
 
     debugImplementation(npatch.androidx.compose.ui.tooling)
     debugImplementation(npatch.androidx.customview)

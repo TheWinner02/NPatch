@@ -14,6 +14,7 @@ android {
                 arguments += "-DEXTERNAL_ROOT=${File(rootDir.absolutePath, "core/external") }"
                 arguments += "-DVERSION_CODE=${rootProject.extra["verCode"]}"
                 arguments += "-DVERSION_NAME=${rootProject.extra["verName"]}"
+                arguments += "-DCMAKE_MAKE_PROGRAM=${File(rootDir, "gradle/ninja/ninja").absolutePath}"
             }
         }
     }
@@ -32,7 +33,7 @@ android {
     externalNativeBuild {
         cmake {
             path("src/main/jni/CMakeLists.txt")
-            version = "3.31.6"
+            version = "3.28.3"
         }
     }
 
