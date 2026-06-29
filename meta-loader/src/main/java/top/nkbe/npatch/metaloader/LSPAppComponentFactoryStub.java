@@ -48,7 +48,9 @@ public class LSPAppComponentFactoryStub extends AppComponentFactory {
     private static void bootstrap() {
         try {
             archToLib.put("arm64", "arm64-v8a");
+            archToLib.put("arm", "armeabi-v7a");
             archToLib.put("x86_64", "x86_64");
+            archToLib.put("x86", "x86");
 
             var cl = Objects.requireNonNull(LSPAppComponentFactoryStub.class.getClassLoader());
             Class<?> VMRuntime = Class.forName("dalvik.system.VMRuntime");

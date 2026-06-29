@@ -141,7 +141,9 @@ public class NPatch {
     ));
     private static final HashSet<String> ARCHES = new HashSet<>(Arrays.asList(
             "arm64-v8a",
-            "x86_64"
+            "armeabi-v7a",
+            "x86_64",
+            "x86"
     ));
 
     private static final ZFileOptions Z_FILE_OPTIONS = new ZFileOptions()

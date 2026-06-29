@@ -27,7 +27,9 @@ object Patcher {
         fun toStringArray(): Array<String> {
             return buildList {
                 add("-o"); add(lspApp.tmpApkDir.absolutePath)
-                add("-p"); add(config.newPackage)
+                if (config.newPackage != null) {
+                    add("-p"); add(config.newPackage)
+                }
                 if (config.debuggable) add("-d")
                 add("-l"); add(config.sigBypassLevel.toString())
                 if (config.useManager) add("--manager")
