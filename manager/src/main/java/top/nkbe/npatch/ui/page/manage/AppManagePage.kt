@@ -58,6 +58,7 @@ import top.nkbe.npatch.ui.page.SelectAppsResult
 import com.ramcosta.composedestinations.generated.destinations.NewPatchScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.SelectAppsScreenDestination
 import top.nkbe.npatch.ui.util.LocalSnackbarHost
+import top.nkbe.npatch.ui.util.bouncyClickable
 import top.nkbe.npatch.ui.viewmodel.manage.AppManageViewModel
 import top.nkbe.npatch.ui.viewstate.ProcessingState
 import nkbe.util.NeoPackageManager
@@ -379,26 +380,33 @@ fun AppManageFab(navigator: DestinationsNavigator) {
         )
     }
 
-    FloatingActionButton(
-        content = { Icon(Icons.Filled.Add, stringResource(R.string.add)) },
-        onClick = {
-            val uri = Configs.storageDirectory?.toUri()
-            if (uri == null) {
+    val onFabClick: () -> Unit = {
+        val uri = Configs.storageDirectory?.toUri()
+        if (uri == null) {
+            shouldSelectDirectory = true
+        } else {
+            runCatching {
+                val takeFlags = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                context.contentResolver.takePersistableUriPermission(uri, takeFlags)
+                if (DocumentFile.fromTreeUri(context, uri)?.exists() == false) throw IOException("Storage directory was deleted")
+            }.onSuccess {
+                showNewPatchDialog = true
+            }.onFailure {
+                Log.w(TAG, "Failed to take persistable permission for saved uri", it)
+                Configs.storageDirectory = null
                 shouldSelectDirectory = true
-            } else {
-                runCatching {
-                    val takeFlags = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
-                    context.contentResolver.takePersistableUriPermission(uri, takeFlags)
-                    if (DocumentFile.fromTreeUri(context, uri)?.exists() == false) throw IOException("Storage directory was deleted")
-                }.onSuccess {
-                    showNewPatchDialog = true
-                }.onFailure {
-                    Log.w(TAG, "Failed to take persistable permission for saved uri", it)
-                    Configs.storageDirectory = null
-                    shouldSelectDirectory = true
-                }
             }
         }
+    }
+
+    ExtendedFloatingActionButton(
+        text = { Text("Nuova Patch", fontWeight = FontWeight.Bold) },
+        icon = { Icon(Icons.Filled.Add, null) },
+        onClick = onFabClick,
+        shape = RoundedCornerShape(18.dp),
+        containerColor = MaterialTheme.colorScheme.primaryContainer,
+        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+        modifier = Modifier.bouncyClickable(onClick = onFabClick)
     )
 }
 

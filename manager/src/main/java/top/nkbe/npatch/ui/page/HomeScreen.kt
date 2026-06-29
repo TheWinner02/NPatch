@@ -5,6 +5,7 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.compose.foundation.clickable
@@ -27,6 +28,8 @@ import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Warning
+import androidx.compose.material.icons.outlined.Code
+import androidx.compose.material.icons.outlined.Send
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -120,9 +123,9 @@ private fun ShizukuCard() {
     val isAvailable = ShizukuApi.isBinderAvailable
 
     val cardColor = if (isGranted) {
-        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.25f)
+        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.15f)
     } else {
-        MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.2f)
+        MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.12f)
     }
 
     val statusColor = if (isGranted) {
@@ -135,79 +138,75 @@ private fun ShizukuCard() {
 
     Card(
         colors = CardDefaults.cardColors(containerColor = cardColor),
-        shape = RoundedCornerShape(28.dp),
+        shape = RoundedCornerShape(24.dp),
+        border = BorderStroke(
+            1.dp,
+            if (isGranted) MaterialTheme.colorScheme.primary.copy(alpha = 0.25f)
+            else MaterialTheme.colorScheme.error.copy(alpha = 0.25f)
+        ),
         modifier = Modifier.fillMaxWidth()
     ) {
-        Column(
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .padding(20.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Glowing Visual Status Ring
             Box(
                 modifier = Modifier
-                    .size(120.dp)
-                    .padding(8.dp),
+                    .size(56.dp)
+                    .background(
+                        color = statusColor.copy(alpha = 0.2f),
+                        shape = RoundedCornerShape(16.dp)
+                    ),
                 contentAlignment = Alignment.Center
             ) {
-                // Background Track Ring
-                CircularProgressIndicator(
-                    progress = { 1f },
-                    modifier = Modifier.fillMaxSize(),
-                    color = statusColor.copy(alpha = 0.15f),
-                    strokeWidth = 8.dp,
-                    strokeCap = androidx.compose.ui.graphics.StrokeCap.Round
-                )
-                // Active Glowing Ring
-                CircularProgressIndicator(
-                    progress = { if (isGranted) 1f else 0.4f },
-                    modifier = Modifier.fillMaxSize(),
-                    color = statusColor,
-                    strokeWidth = 8.dp,
-                    strokeCap = androidx.compose.ui.graphics.StrokeCap.Round
-                )
-                // Center Icon / Status Symbol
                 Icon(
                     imageVector = if (isGranted) Icons.Outlined.CheckCircle else Icons.Outlined.Warning,
                     contentDescription = null,
                     tint = statusColor,
-                    modifier = Modifier.size(44.dp)
+                    modifier = Modifier.size(32.dp)
                 )
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Text(
-                text = stringResource(if (isGranted) R.string.shizuku_available else R.string.shizuku_unavailable),
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-
-            Spacer(modifier = Modifier.height(6.dp))
-
-            Text(
-                text = if (isGranted) "API ${Shizuku.getVersion()} • " + stringResource(R.string.shizuku_available) else stringResource(R.string.home_shizuku_warning),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.padding(horizontal = 16.dp)
-            )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Servizio Shizuku",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = if (isGranted) {
+                        "Connesso • API ${Shizuku.getVersion()}"
+                    } else if (isAvailable) {
+                        "Autorizzazione richiesta"
+                    } else {
+                        stringResource(R.string.home_shizuku_warning)
+                    },
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
 
             if (isAvailable && !isGranted) {
-                Spacer(modifier = Modifier.height(16.dp))
                 Button(
                     onClick = { Shizuku.requestPermission(114514) },
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary
+                    ),
                     shape = RoundedCornerShape(100.dp),
                     modifier = Modifier.bouncyClickable {
                         Shizuku.requestPermission(114514)
                     }
                 ) {
                     Text(
-                        text = stringResource(R.string.shizuku_available),
-                        fontWeight = FontWeight.SemiBold
+                        text = "Autorizza",
+                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.bodyMedium
                     )
                 }
             }
@@ -405,38 +404,93 @@ private fun DashboardGridCard(
 
 @Composable
 private fun SupportCard() {
-    ElevatedCard(
-        shape = RoundedCornerShape(28.dp),
+    val context = LocalContext.current
+    Card(
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.25f)
+        ),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)),
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp)
+                .padding(20.dp)
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Outlined.Info, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                Spacer(Modifier.width(8.dp))
+                Spacer(Modifier.width(10.dp))
                 Text(
                     text = stringResource(R.string.home_support),
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             }
             Spacer(Modifier.height(8.dp))
             Text(
-                text = stringResource(R.string.home_description),
+                text = "NPatch è un framework Xposed non-root gratuito basato sul core LSPosed. Unisciti alla comunità su Telegram o contribuisci su GitHub.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            Spacer(Modifier.height(12.dp))
-            HtmlText(
-                stringResource(
-                    R.string.home_view_source_code,
-                    "<b><a href=\"https://github.com/7723mod/NPatch\">GitHub</a></b>",
-                    "<b><a href=\"https://t.me/NPatch\">Telegram</a></b>"
-                )
-            )
+            Spacer(Modifier.height(16.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Button(
+                    onClick = {
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/7723mod/NPatch"))
+                        context.startActivity(intent)
+                    },
+                    modifier = Modifier
+                        .weight(1f)
+                        .bouncyClickable {
+                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/7723mod/NPatch"))
+                            context.startActivity(intent)
+                        },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                    ),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.Code,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("GitHub", fontWeight = FontWeight.Bold)
+                }
+
+                Button(
+                    onClick = {
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://t.me/NPatch"))
+                        context.startActivity(intent)
+                    },
+                    modifier = Modifier
+                        .weight(1f)
+                        .bouncyClickable {
+                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://t.me/NPatch"))
+                            context.startActivity(intent)
+                        },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary
+                    ),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.Send,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Telegram", fontWeight = FontWeight.Bold)
+                }
+            }
         }
     }
 }
