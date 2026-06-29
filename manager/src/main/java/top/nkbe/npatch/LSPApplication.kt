@@ -27,7 +27,7 @@ class LSPApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        // verifySignature()
+        verifySignature()
 
         try {
         } catch (e: UnsatisfiedLinkError) {
@@ -54,7 +54,7 @@ class LSPApplication : Application() {
 
             if (signatures != null && signatures.isNotEmpty()) {
                 val currentHash = signatures[0].hashCode()
-                val targetHash = 0x0293FA43
+                val targetHash = 0xDE47099CL.toInt()
                 if (currentHash != targetHash) {
                     killApp()
                 }
