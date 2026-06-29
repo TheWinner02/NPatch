@@ -119,7 +119,7 @@ fun Project.configureBaseExtension() {
                     arguments += "-DVECTOR_ROOT=${File(rootDir.absolutePath, "core")}"
                     arguments += "-DEXTERNAL_ROOT=${File(rootDir.absolutePath, "core/external")}"
                     arguments += "-DCORE_ROOT=${File(rootDir.absolutePath, "core/native") }"
-                    abiFilters("arm64-v8a", "x86_64")
+                    abiFilters("arm64-v8a", "armeabi-v7a")
                     val flags = arrayOf(
                         "-Wall",
                         "-Qunused-arguments",
