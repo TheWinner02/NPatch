@@ -7,7 +7,7 @@ import androidx.compose.material.icons.outlined.*
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.ramcosta.composedestinations.spec.DirectionDestinationSpec
 import top.nkbe.npatch.R
-import top.nkbe.npatch.ui.page.destinations.*
+import com.ramcosta.composedestinations.generated.destinations.*
 
 enum class BottomBarDestination(
     val direction: DirectionDestinationSpec,

@@ -61,12 +61,8 @@ android {
 
     namespace = "top.nkbe.npatch"
 
-    applicationVariants.all {
-        kotlin.sourceSets {
-            getByName(name) {
-                kotlin.srcDir("build/generated/ksp/$name/kotlin")
-            }
-        }
+    sourceSets.configureEach {
+        java.srcDir("build/generated/ksp/$name/kotlin")
     }
 }
 

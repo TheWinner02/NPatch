@@ -25,6 +25,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.border
+import androidx.compose.ui.text.font.FontWeight
+import top.nkbe.npatch.ui.util.bouncyClickable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -42,6 +46,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ramcosta.composedestinations.annotation.Destination
+import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import com.ramcosta.composedestinations.result.NavResult
 import com.ramcosta.composedestinations.result.ResultRecipient
@@ -54,7 +59,7 @@ import top.nkbe.npatch.ui.component.ShimmerAnimation
 import top.nkbe.npatch.ui.component.settings.SettingsCheckBox
 import top.nkbe.npatch.ui.component.settings.SettingsEditor
 import top.nkbe.npatch.ui.component.settings.SettingsItem
-import top.nkbe.npatch.ui.page.destinations.SelectAppsScreenDestination
+import com.ramcosta.composedestinations.generated.destinations.SelectAppsScreenDestination
 import top.nkbe.npatch.ui.util.InstallResultReceiver
 import top.nkbe.npatch.ui.util.LocalSnackbarHost
 import top.nkbe.npatch.ui.util.checkIsApkFixedByLSP
@@ -77,7 +82,7 @@ const val ACTION_APPLIST = 1
 const val ACTION_INTENT_INSTALL = 2
 
 @OptIn(ExperimentalMaterial3Api::class)
-@Destination
+@Destination<RootGraph>
 @Composable
 fun NewPatchScreen(
     navigator: DestinationsNavigator,
@@ -270,9 +275,15 @@ private fun ConfiguringTopBar(onBackClick: () -> Unit) {
 private fun ConfiguringFab() {
     val viewModel = viewModel<NewPatchViewModel>()
     ExtendedFloatingActionButton(
-        text = { Text(stringResource(R.string.patch_start)) },
+        text = { Text(stringResource(R.string.patch_start), fontWeight = FontWeight.Bold) },
         icon = { Icon(Icons.Outlined.AutoFixHigh, null) },
-        onClick = { viewModel.dispatch(ViewAction.SubmitPatch) }
+        onClick = { viewModel.dispatch(ViewAction.SubmitPatch) },
+        shape = RoundedCornerShape(18.dp),
+        containerColor = MaterialTheme.colorScheme.primaryContainer,
+        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+        modifier = Modifier.bouncyClickable {
+            viewModel.dispatch(ViewAction.SubmitPatch)
+        }
     )
 }
 
@@ -287,125 +298,196 @@ private fun sigBypassLvStr(level: Int) = when (level) {
 }
 
 @Composable
+private fun OptionsCategoryCard(
+    title: String,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 6.dp)
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Black,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.padding(start = 12.dp, bottom = 6.dp)
+        )
+        Card(
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.25f)
+            ),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)),
+            modifier = Modifier.fillMaxWidth(),
+            content = content
+        )
+    }
+}
+
+@Composable
 private fun PatchOptionsBody(modifier: Modifier, onAddEmbed: () -> Unit) {
     val viewModel = viewModel<NewPatchViewModel>()
 
-    Column(modifier.verticalScroll(rememberScrollState())) {
-        Text(
-            text = viewModel.patchApp.label,
-            style = MaterialTheme.typography.headlineSmall,
-            modifier = Modifier.padding(horizontal = 24.dp)
-        )
-        Text(
-            text = viewModel.patchApp.app.packageName,
-            style = MaterialTheme.typography.bodyLarge,
-            modifier = Modifier.padding(horizontal = 24.dp)
-        )
-        Text(
-            text = stringResource(R.string.patch_mode),
-            style = MaterialTheme.typography.titleLarge,
+    Column(
+        modifier = modifier
+            .verticalScroll(rememberScrollState())
+            .padding(vertical = 12.dp)
+    ) {
+        Card(
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.15f)
+            ),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.25f)),
             modifier = Modifier
-                .align(Alignment.CenterHorizontally)
-                .padding(top = 24.dp, bottom = 12.dp)
-        )
-        SelectionColumn(Modifier.padding(horizontal = 24.dp)) {
-            SelectionItem(
-                selected = viewModel.useManager,
-                onClick = { viewModel.useManager = true },
-                icon = Icons.Outlined.Api,
-                title = stringResource(R.string.patch_local),
-                desc = stringResource(R.string.patch_local_desc)
-            )
-            SelectionItem(
-                selected = !viewModel.useManager,
-                onClick = { viewModel.useManager = false },
-                icon = Icons.Outlined.WorkOutline,
-                title = stringResource(R.string.patch_integrated),
-                desc = stringResource(R.string.patch_integrated_desc),
-                extraContent = {
-                    TextButton(
-                        onClick = onAddEmbed,
-                        content = { Text(text = stringResource(R.string.patch_embed_modules), style = MaterialTheme.typography.bodyLarge) }
-                    )
-                }
-            )
-        }
-        SettingsEditor(Modifier.padding(top = 6.dp),
-            stringResource(R.string.patch_new_package),
-            viewModel.newPackageName,
-            onValueChange = {
-                viewModel.newPackageName = it
-            },
-        )
-        SettingsCheckBox(
-            modifier = Modifier
-                .padding(top = 6.dp)
-                .clickable { viewModel.debuggable = !viewModel.debuggable },
-            checked = viewModel.debuggable,
-            icon = Icons.Outlined.BugReport,
-            title = stringResource(R.string.patch_debuggable)
-        )
-        SettingsCheckBox(
-            modifier = Modifier.clickable { viewModel.overrideVersionCode = !viewModel.overrideVersionCode },
-            checked = viewModel.overrideVersionCode,
-            icon = Icons.Outlined.Layers,
-            title = stringResource(R.string.patch_override_version_code),
-            desc = stringResource(R.string.patch_override_version_code_desc)
-        )
-        SettingsCheckBox(
-            modifier = Modifier.clickable { viewModel.injectDex = !viewModel.injectDex },
-            checked = viewModel.injectDex,
-            icon = Icons.Outlined.Code,
-            title = stringResource(R.string.patch_inject_dex),
-            desc = stringResource(R.string.patch_inject_dex_desc)
-        )
-        SettingsCheckBox(
-            modifier = Modifier.clickable { viewModel.injectProvider = !viewModel.injectProvider },
-            checked = viewModel.injectProvider,
-            icon = Icons.Outlined.AddCard,
-            title = stringResource(R.string.patch_inject_mt_provider),
-            desc = stringResource(R.string.patch_inject_mt_provider_desc)
-        )
-        SettingsCheckBox(
-            modifier = Modifier.clickable { viewModel.useMicroG = !viewModel.useMicroG },
-            checked = viewModel.useMicroG,
-            icon = Icons.Outlined.CloudSync,
-            title = stringResource(R.string.patch_use_microg),
-            desc = stringResource(R.string.patch_use_microg_desc)
-        )
-        SettingsCheckBox(
-            modifier = Modifier.clickable { viewModel.outputLog = !viewModel.outputLog },
-            checked = viewModel.outputLog,
-            icon = Icons.Outlined.AddCard,
-            title = stringResource(R.string.patch_output_log_to_media),
-            desc = stringResource(R.string.patch_output_log_to_media_desc)
-        )
-        var bypassExpanded by remember { mutableStateOf(false) }
-        AnywhereDropdown(
-            expanded = bypassExpanded,
-            onDismissRequest = { bypassExpanded = false },
-            onClick = { bypassExpanded = true },
-            surface = {
-                SettingsItem(
-                    icon = Icons.Outlined.RemoveModerator,
-                    title = stringResource(R.string.patch_sigbypass),
-                    desc = sigBypassLvStr(viewModel.sigBypassLevel)
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp)
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    text = viewModel.patchApp.label,
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Black,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = viewModel.patchApp.app.packageName,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontFamily = FontFamily.Monospace,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-        ) {
-            repeat(5) {
-                DropdownMenuItem(
-                    text = {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            RadioButton(selected = viewModel.sigBypassLevel == it, onClick = { viewModel.sigBypassLevel = it })
-                            Text(sigBypassLvStr(it))
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        OptionsCategoryCard(title = stringResource(R.string.patch_mode)) {
+            Box(modifier = Modifier.padding(16.dp)) {
+                SelectionColumn {
+                    SelectionItem(
+                        selected = viewModel.useManager,
+                        onClick = { viewModel.useManager = true },
+                        icon = Icons.Outlined.Api,
+                        title = stringResource(R.string.patch_local),
+                        desc = stringResource(R.string.patch_local_desc)
+                    )
+                    SelectionItem(
+                        selected = !viewModel.useManager,
+                        onClick = { viewModel.useManager = false },
+                        icon = Icons.Outlined.WorkOutline,
+                        title = stringResource(R.string.patch_integrated),
+                        desc = stringResource(R.string.patch_integrated_desc),
+                        extraContent = {
+                            TextButton(
+                                onClick = onAddEmbed,
+                                modifier = Modifier.bouncyClickable { onAddEmbed() },
+                                content = {
+                                    Text(
+                                        text = stringResource(R.string.patch_embed_modules),
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            )
                         }
-                    },
-                    onClick = {
-                        viewModel.sigBypassLevel = it
-                        bypassExpanded = false
-                    }
-                )
+                    )
+                }
+            }
+        }
+
+        OptionsCategoryCard(title = "Configurazione Pacchetto") {
+            SettingsEditor(
+                modifier = Modifier.fillMaxWidth(),
+                label = stringResource(R.string.patch_new_package),
+                text = viewModel.newPackageName,
+                onValueChange = { viewModel.newPackageName = it }
+            )
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+            SettingsCheckBox(
+                modifier = Modifier.bouncyClickable { viewModel.debuggable = !viewModel.debuggable },
+                checked = viewModel.debuggable,
+                icon = Icons.Outlined.BugReport,
+                title = stringResource(R.string.patch_debuggable)
+            )
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+            SettingsCheckBox(
+                modifier = Modifier.bouncyClickable { viewModel.overrideVersionCode = !viewModel.overrideVersionCode },
+                checked = viewModel.overrideVersionCode,
+                icon = Icons.Outlined.Layers,
+                title = stringResource(R.string.patch_override_version_code),
+                desc = stringResource(R.string.patch_override_version_code_desc)
+            )
+        }
+
+        OptionsCategoryCard(title = "Servizi & Integrazione Moduli") {
+            SettingsCheckBox(
+                modifier = Modifier.bouncyClickable { viewModel.injectDex = !viewModel.injectDex },
+                checked = viewModel.injectDex,
+                icon = Icons.Outlined.Code,
+                title = stringResource(R.string.patch_inject_dex),
+                desc = stringResource(R.string.patch_inject_dex_desc)
+            )
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+            SettingsCheckBox(
+                modifier = Modifier.bouncyClickable { viewModel.injectProvider = !viewModel.injectProvider },
+                checked = viewModel.injectProvider,
+                icon = Icons.Outlined.AddCard,
+                title = stringResource(R.string.patch_inject_mt_provider),
+                desc = stringResource(R.string.patch_inject_mt_provider_desc)
+            )
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+            SettingsCheckBox(
+                modifier = Modifier.bouncyClickable { viewModel.useMicroG = !viewModel.useMicroG },
+                checked = viewModel.useMicroG,
+                icon = Icons.Outlined.CloudSync,
+                title = stringResource(R.string.patch_use_microg),
+                desc = stringResource(R.string.patch_use_microg_desc)
+            )
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+            SettingsCheckBox(
+                modifier = Modifier.bouncyClickable { viewModel.outputLog = !viewModel.outputLog },
+                checked = viewModel.outputLog,
+                icon = Icons.Outlined.AddCard,
+                title = stringResource(R.string.patch_output_log_to_media),
+                desc = stringResource(R.string.patch_output_log_to_media_desc)
+            )
+        }
+
+        OptionsCategoryCard(title = "Sicurezza & Bypass della firma") {
+            var bypassExpanded by remember { mutableStateOf(false) }
+            AnywhereDropdown(
+                expanded = bypassExpanded,
+                onDismissRequest = { bypassExpanded = false },
+                onClick = { bypassExpanded = true },
+                surface = {
+                    SettingsItem(
+                        icon = Icons.Outlined.RemoveModerator,
+                        title = stringResource(R.string.patch_sigbypass),
+                        desc = sigBypassLvStr(viewModel.sigBypassLevel),
+                        modifier = Modifier.bouncyClickable { bypassExpanded = true }
+                    )
+                }
+            ) {
+                repeat(5) { level ->
+                    DropdownMenuItem(
+                        text = {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                RadioButton(
+                                    selected = viewModel.sigBypassLevel == level,
+                                    onClick = { viewModel.sigBypassLevel = level }
+                                )
+                                Text(sigBypassLvStr(level))
+                            }
+                        },
+                        onClick = {
+                            viewModel.sigBypassLevel = level
+                            bypassExpanded = false
+                        }
+                    )
+                }
             }
         }
     }
@@ -471,15 +553,19 @@ private fun DoPatchBody(modifier: Modifier, navigator: DestinationsNavigator) {
                         modifier = Modifier
                             .fillMaxWidth()
                             .heightIn(max = shellBoxMaxHeight)
-                            .clip(RoundedCornerShape(32.dp))
-                            .background(MaterialTheme.colorScheme.surfaceVariant) // Replaced 'brush' with a theme color
-                            .padding(horizontal = 24.dp, vertical = 18.dp)
+                            .clip(RoundedCornerShape(24.dp))
+                            .background(androidx.compose.ui.graphics.Color(0xFF151515))
+                            .border(BorderStroke(2.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)), RoundedCornerShape(24.dp))
+                            .padding(horizontal = 20.dp, vertical = 16.dp)
                     ) {
-                        items(viewModel.logs) {
-                            when (it.first) {
-                                Log.DEBUG, Log.INFO -> Text(text = it.second)
-                                Log.ERROR -> Text(text = it.second, color = MaterialTheme.colorScheme.error)
-                            }
+                        items(viewModel.logs) { logPair ->
+                            Text(
+                                text = logPair.second,
+                                fontFamily = FontFamily.Monospace,
+                                color = if (logPair.first == Log.ERROR) MaterialTheme.colorScheme.error else androidx.compose.ui.graphics.Color(0xFF33FF66),
+                                style = MaterialTheme.typography.bodySmall,
+                                modifier = Modifier.padding(vertical = 2.dp)
+                            )
                         }
                     }
 

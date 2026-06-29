@@ -38,10 +38,7 @@ fun SettingsEditor(
                     label = { Text(label) },
                     onValueChange = onValueChange,
                     textStyle = TextStyle(fontWeight = FontWeight.Bold),
-                    colors = TextFieldDefaults.colors(
-                        unfocusedContainerColor = MaterialTheme.colorScheme.surface,
-                        focusedContainerColor = MaterialTheme.colorScheme.surface
-                    ),
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 8.dp)

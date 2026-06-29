@@ -10,6 +10,11 @@ import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import top.nkbe.npatch.ui.util.shimmerWave
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -50,8 +55,8 @@ import top.nkbe.npatch.ui.component.LoadingDialog
 import top.nkbe.npatch.ui.page.ACTION_APPLIST
 import top.nkbe.npatch.ui.page.ACTION_STORAGE
 import top.nkbe.npatch.ui.page.SelectAppsResult
-import top.nkbe.npatch.ui.page.destinations.NewPatchScreenDestination
-import top.nkbe.npatch.ui.page.destinations.SelectAppsScreenDestination
+import com.ramcosta.composedestinations.generated.destinations.NewPatchScreenDestination
+import com.ramcosta.composedestinations.generated.destinations.SelectAppsScreenDestination
 import top.nkbe.npatch.ui.util.LocalSnackbarHost
 import top.nkbe.npatch.ui.viewmodel.manage.AppManageViewModel
 import top.nkbe.npatch.ui.viewstate.ProcessingState
@@ -130,16 +135,16 @@ fun AppManageBody(
         modifier = Modifier.fillMaxSize()
     ) {
         if (viewModel.appList.isEmpty()) {
-            Box(Modifier.fillMaxSize()) {
-                Text(
-                    modifier = Modifier.align(Alignment.Center),
-                    text = run {
-                        if (NeoPackageManager.appList.isEmpty()) stringResource(R.string.manage_loading)
-                        else stringResource(R.string.manage_no_apps)
-                    },
-                    fontFamily = FontFamily.Serif,
-                    style = MaterialTheme.typography.headlineSmall
-                )
+            if (NeoPackageManager.appList.isEmpty()) {
+                ShimmerLoadingSkeleton()
+            } else {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text(
+                        text = stringResource(R.string.manage_no_apps),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
         } else {
             LazyColumn(Modifier.fillMaxSize()) {
@@ -395,4 +400,61 @@ fun AppManageFab(navigator: DestinationsNavigator) {
             }
         }
     )
+}
+
+@Composable
+private fun ShimmerLoadingSkeleton() {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        repeat(5) {
+            Card(
+                shape = RoundedCornerShape(24.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f)
+                ),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(48.dp)
+                            .clip(CircleShape)
+                            .shimmerWave()
+                    )
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .width(140.dp)
+                                .height(16.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .shimmerWave()
+                        )
+                        Box(
+                            modifier = Modifier
+                                .width(200.dp)
+                                .height(12.dp)
+                                .clip(RoundedCornerShape(6.dp))
+                                .shimmerWave()
+                        )
+                    }
+                }
+            }
+        }
+    }
 }

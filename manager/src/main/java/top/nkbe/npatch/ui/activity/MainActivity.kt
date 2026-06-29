@@ -12,6 +12,8 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -23,11 +25,13 @@ import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import com.google.accompanist.navigation.animation.rememberAnimatedNavController
 import com.ramcosta.composedestinations.DestinationsNavHost
+import com.ramcosta.composedestinations.generated.NavGraphs
+import com.ramcosta.composedestinations.utils.currentDestinationAsState
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.blur.blurEffect
+import dev.chrisbanes.haze.hazeEffect
+import dev.chrisbanes.haze.hazeSource
 import top.nkbe.npatch.ui.page.BottomBarDestination
-import top.nkbe.npatch.ui.page.NavGraphs
-import top.nkbe.npatch.ui.page.appCurrentDestinationAsState
-import top.nkbe.npatch.ui.page.destinations.Destination
-import top.nkbe.npatch.ui.page.startAppDestination
 import top.nkbe.npatch.ui.theme.LSPTheme
 import top.nkbe.npatch.ui.util.LocalSnackbarHost
 
@@ -44,16 +48,26 @@ class MainActivity : ComponentActivity() {
             val navController = rememberAnimatedNavController()
             LSPTheme {
                 val snackbarHostState = remember { SnackbarHostState() }
-                CompositionLocalProvider(LocalSnackbarHost provides snackbarHostState) {
+                val hazeState = remember { HazeState() }
+                CompositionLocalProvider(
+                    LocalSnackbarHost provides snackbarHostState,
+                    top.nkbe.npatch.ui.util.LocalHazeState provides hazeState
+                ) {
                     Scaffold(
-                        bottomBar = { BottomBar(navController) },
+                        bottomBar = { BottomBar(navController, hazeState) },
                         snackbarHost = { SnackbarHost(snackbarHostState) }
                     ) { innerPadding ->
-                        DestinationsNavHost(
-                            modifier = Modifier.padding(innerPadding),
-                            navGraph = NavGraphs.root,
-                            navController = navController
-                        )
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .hazeSource(hazeState)
+                        ) {
+                            DestinationsNavHost(
+                                modifier = Modifier.padding(innerPadding),
+                                navGraph = NavGraphs.root,
+                                navController = navController
+                            )
+                        }
                     }
                 }
             }
@@ -64,36 +78,28 @@ class MainActivity : ComponentActivity() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             // Android 11 (SDK 30) 以上請求 "所有檔案存取權"
             if (!Environment.isExternalStorageManager()) {
-                try {
-                    val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION)
-                    intent.addCategory("android.intent.category.DEFAULT")
-                    intent.data = Uri.parse("package:$packageName")
-                    startActivity(intent)
-                } catch (e: Exception) {
-                    val intent = Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION)
-                    startActivity(intent)
-                }
+                val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION)
+                intent.data = Uri.parse("package:$packageName")
+                startActivityForResult(intent, 1001)
             }
         } else {
-            // Android 10 以下請求傳統讀寫權限
-            if (checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-                ActivityCompat.requestPermissions(
-                    this,
-                    arrayOf(
-                        Manifest.permission.READ_EXTERNAL_STORAGE,
-                        Manifest.permission.WRITE_EXTERNAL_STORAGE
-                    ),
-                    1001
-                )
-            }
+            // Android 11 以下請求普通讀寫權限
+            ActivityCompat.requestPermissions(
+                this,
+                arrayOf(
+                    Manifest.permission.READ_EXTERNAL_STORAGE,
+                    Manifest.permission.WRITE_EXTERNAL_STORAGE
+                ),
+                1001
+            )
         }
     }
 }
 
 @Composable
-private fun BottomBar(navController: NavHostController) {
-    val currentDestination: Destination = navController.appCurrentDestinationAsState().value
-        ?: NavGraphs.root.startAppDestination
+private fun BottomBar(navController: NavHostController, hazeState: HazeState) {
+    val currentDestination = navController.currentDestinationAsState().value
+        ?: NavGraphs.root.startRoute
     var topDestination by rememberSaveable { mutableStateOf(currentDestination.route) }
     LaunchedEffect(currentDestination) {
         val queue = navController.currentBackStack.value
@@ -101,7 +107,15 @@ private fun BottomBar(navController: NavHostController) {
         else if (queue.size > 2) topDestination = queue[2].destination.route!!
     }
 
-    NavigationBar(tonalElevation = 8.dp) {
+    NavigationBar(
+        tonalElevation = 0.dp,
+        containerColor = androidx.compose.ui.graphics.Color.Transparent,
+        modifier = Modifier.hazeEffect(state = hazeState) {
+            blurEffect {
+                blurRadius = top.nkbe.npatch.config.Configs.blurRadius.dp
+            }
+        }
+    ) {
         BottomBarDestination.values().forEach { destination ->
             NavigationBarItem(
                 selected = topDestination == destination.direction.route,
@@ -115,8 +129,10 @@ private fun BottomBar(navController: NavHostController) {
                     }
                 },
                 icon = {
-                    if (topDestination == destination.direction.route) Icon(destination.iconSelected, stringResource(destination.label))
-                    else Icon(destination.iconNotSelected, stringResource(destination.label))
+                    Icon(
+                        imageVector = if (topDestination == destination.direction.route) destination.iconSelected else destination.iconNotSelected,
+                        contentDescription = stringResource(destination.label)
+                    )
                 },
                 label = { Text(stringResource(destination.label)) },
                 alwaysShowLabel = false

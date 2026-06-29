@@ -12,6 +12,9 @@ object Configs {
     private const val PREFS_KEYSTORE_ALIAS_PASSWORD = "keystore_alias_password"
     private const val PREFS_STORAGE_DIRECTORY = "storage_directory"
     private const val PREFS_DETAIL_PATCH_LOGS = "detail_patch_logs"
+    private const val PREFS_BOUNCY_ANIMATIONS = "bouncy_animations"
+    private const val PREFS_CUSTOM_ACCENT_COLOR = "custom_accent_color"
+    private const val PREFS_BLUR_RADIUS = "blur_radius"
 
     var keyStorePassword by delegateStateOf(lspApp.prefs.getString(PREFS_KEYSTORE_PASSWORD, "123456")!!) {
         lspApp.prefs.edit().putString(PREFS_KEYSTORE_PASSWORD, it).apply()
@@ -31,5 +34,17 @@ object Configs {
 
     var detailPatchLogs by delegateStateOf(lspApp.prefs.getBoolean(PREFS_DETAIL_PATCH_LOGS, true)) {
         lspApp.prefs.edit().putBoolean(PREFS_DETAIL_PATCH_LOGS, it).apply()
+    }
+
+    var bouncyAnimations by delegateStateOf(lspApp.prefs.getBoolean(PREFS_BOUNCY_ANIMATIONS, true)) {
+        lspApp.prefs.edit().putBoolean(PREFS_BOUNCY_ANIMATIONS, it).apply()
+    }
+
+    var customAccentColor by delegateStateOf(lspApp.prefs.getString(PREFS_CUSTOM_ACCENT_COLOR, "default")!!) {
+        lspApp.prefs.edit().putString(PREFS_CUSTOM_ACCENT_COLOR, it).apply()
+    }
+
+    var blurRadius by delegateStateOf(lspApp.prefs.getInt(PREFS_BLUR_RADIUS, 24)) {
+        lspApp.prefs.edit().putInt(PREFS_BLUR_RADIUS, it).apply()
     }
 }

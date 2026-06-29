@@ -3,6 +3,11 @@ package top.nkbe.npatch.ui.page
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
 import androidx.compose.material3.*
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.runtime.Composable
@@ -15,18 +20,22 @@ import com.google.accompanist.pager.ExperimentalPagerApi
 import com.google.accompanist.pager.HorizontalPager
 import com.google.accompanist.pager.rememberPagerState
 import com.ramcosta.composedestinations.annotation.Destination
+import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import com.ramcosta.composedestinations.result.ResultRecipient
 import kotlinx.coroutines.launch
 import top.nkbe.npatch.R
 import top.nkbe.npatch.ui.component.CenterTopBar
-import top.nkbe.npatch.ui.page.destinations.SelectAppsScreenDestination
+import top.nkbe.npatch.ui.util.bouncyClickable
+import com.ramcosta.composedestinations.generated.destinations.SelectAppsScreenDestination
 import top.nkbe.npatch.ui.page.manage.AppManageBody
 import top.nkbe.npatch.ui.page.manage.AppManageFab
 import top.nkbe.npatch.ui.page.manage.ModuleManageBody
 
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalPagerApi::class)
-@Destination
+@Destination<RootGraph>
 @Composable
 fun ManageScreen(
     navigator: DestinationsNavigator,
@@ -35,9 +44,11 @@ fun ManageScreen(
     val scope = rememberCoroutineScope()
     val pagerState = rememberPagerState()
     val tabTitles = listOf(stringResource(R.string.apps), stringResource(R.string.modules))
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
     Scaffold(
-        topBar = { CenterTopBar(stringResource(BottomBarDestination.Manage.label)) },
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        topBar = { CenterTopBar(stringResource(BottomBarDestination.Manage.label), scrollBehavior = scrollBehavior) },
         floatingActionButton = {
             if (pagerState.currentPage == 0) AppManageFab(navigator)
         }
@@ -49,13 +60,26 @@ fun ManageScreen(
         ) {
             TabRow(
                 selectedTabIndex = pagerState.currentPage,
-                containerColor = MaterialTheme.colorScheme.surface,
-                contentColor = MaterialTheme.colorScheme.primary,
+                containerColor = androidx.compose.ui.graphics.Color.Transparent,
+                divider = {},
                 indicator = { tabPositions ->
-                    TabRowDefaults.Indicator(
-                        Modifier.tabIndicatorOffset(tabPositions[pagerState.currentPage])
+                    Box(
+                        Modifier
+                            .tabIndicatorOffset(tabPositions[pagerState.currentPage])
+                            .fillMaxHeight()
+                            .padding(vertical = 6.dp, horizontal = 12.dp)
+                            .background(
+                                color = MaterialTheme.colorScheme.primary,
+                                shape = RoundedCornerShape(100.dp)
+                            )
                     )
-                }
+                },
+                modifier = Modifier
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                    .background(
+                        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                        shape = RoundedCornerShape(100.dp)
+                    )
             ) {
                 tabTitles.forEachIndexed { index, title ->
                     val selected = pagerState.currentPage == index
@@ -65,11 +89,16 @@ fun ManageScreen(
                         text = {
                             Text(
                                 text = title,
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
-                                modifier = Modifier.padding(vertical = 12.dp)
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = if (selected) FontWeight.Black else FontWeight.Medium,
+                                color = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         },
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(100.dp))
+                            .bouncyClickable {
+                                scope.launch { pagerState.animateScrollToPage(index) }
+                            }
                     )
                 }
             }

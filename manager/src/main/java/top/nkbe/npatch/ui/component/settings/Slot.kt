@@ -1,5 +1,6 @@
 package top.nkbe.npatch.ui.component.settings
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -30,15 +31,27 @@ fun SettingsSlot(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
-            modifier = modifier.size(24.dp),
+            modifier = Modifier.size(36.dp),
             contentAlignment = Alignment.Center,
         ) {
             if (icon != null) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    modifier = Modifier.fillMaxSize()
-                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f),
+                            shape = androidx.compose.foundation.shape.RoundedCornerShape(10.dp)
+                        )
+                        .padding(6.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
             }
         }
         Column(Modifier.weight(1f).padding(vertical = 6.dp)) {
